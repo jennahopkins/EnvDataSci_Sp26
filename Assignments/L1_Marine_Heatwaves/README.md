@@ -11,6 +11,9 @@ In this lab, we'll discuss the detection and categorization of marine heatwaves 
 2. Write Discussion and References sections in your R Markdown. The Discussion should place your findings or datasets in a broader environmental or scientific context, be between 500-750 words (not including citations), and reference at least 8 primary or secondary research articles. You should incorporate the papers below. Then save your file as a PDF or HTML (click Knit in RStudio and troubleshoot as necessary). Turn it in on Canvas.
 
 [Hobday et al. 2018](https://github.com/ZMcourses/EnvDataSci_Sp26/blob/main/Readings/Hobday%20et%20al.%20-%202018%20-%20Categorizing%20and%20Naming%20Marine%20Heatwaves.pdf)
+
 [Amaya et al. 2023](https://github.com/ZMcourses/EnvDataSci_Sp26/blob/main/Readings/Amaya%20et%20al.%20-%202023%20-%20Marine%20heatwaves%20need%20clear%20definitions%20so%20coastal.pdf)
+
 [Capotondi et al. 2024](https://github.com/ZMcourses/EnvDataSci_Sp26/blob/main/Readings/Capotondi%20et%20al.%20-%202024%20-%20A%20global%20overview%20of%20marine%20heatwaves%20in%20a%20changin.pdf)
+
 [Farchadi et al. 2025](https://github.com/ZMcourses/EnvDataSci_Sp26/blob/main/Readings/Farchadi%20et%20al.%20-%202025%20-%20Marine%20heatwaves%20are%20in%20the%20eye%20of%20the%20beholder.pdf)
