@@ -859,7 +859,7 @@ head(MEI_long)</code></pre>
 ## 5  1979 AM     0.27 05       1979-05-01
 ## 6  1979 MJ    -0.11 06       1979-06-01</code></pre>
 <p>Let’s make a quick line graph showing the Multivariate ENSO Index
-over time! Why do we see this warning?</p>
+over time!</p>
 <pre class="r"><code>MEIseries &lt;- ggplot(data = MEI_long, aes(x = Date, y = MEI)) +
   geom_line()
 
@@ -869,13 +869,13 @@ MEIseries</code></pre>
 and a time series plot called <code>MEIseries</code>. Now let’s follow
 the principles of quality control to improve these data products!</p>
 <p>First, let’s make our dataset more meaningful by categorizing the
-bimonthly MEI as El Niño (<span class="math inline">\(MEI \ge
-0.5\)</span>), neutral (<span class="math inline">\(-0.5 &lt; MEI &lt;
-0.5\)</span>), or La Niña (<span class="math inline">\(MEI \le
--0.5\)</span>). We’ll make a new column to store the ENSO phase using
-<code>mutate</code> and nested <code>if_else</code> statements. Let’s
-make sure our logic was applied correctly using the <code>table</code>
-function.</p>
+bimonthly MEI as El Niño (MEI <span class="math inline">\(\ge
+0.5\)</span>), neutral (<span class="math inline">\(-0.5 &lt;\)</span>
+MEI <span class="math inline">\(&lt; 0.5\)</span>), or La Niña (MEI
+<span class="math inline">\(\le -0.5\)</span>). We’ll make a new column
+to store the ENSO phase using <code>mutate</code> and nested
+<code>if_else</code> statements. Let’s make sure our logic was applied
+correctly using the <code>table</code> function.</p>
 <pre class="r"><code>MEI_long &lt;- MEI_long %&gt;% 
   mutate(ENSOphase = if_else(MEI &lt; -0.49, &quot;La Nina&quot;,
                              if_else(MEI &gt; 0.49, &quot;El Nino&quot;,
