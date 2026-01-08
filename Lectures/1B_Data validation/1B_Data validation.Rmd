@@ -1,0 +1,337 @@
+---
+title: "Lecture 1B. Data Validation"
+author: "Zechariah Meunier"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+Our goals as ecological and earth system data scientists are to extract meaning from big environmental data and to provide valuable insight to stakeholders. This can only be done through careful work with data at every stage in the data life cycle.
+
+## Definitions
+**Data validation** - process of ensuring that data are accurate (i.e., have correct values) and precise (i.e., have consistent values)
+
+**Quality assurance (QA)** - systematic prevention of defects in a product or service so that they meet specified requirements
+
+- proactive approach
+- requires audit of the process or **input**
+
+**Quality control (QC)** - identification and rectification of defects in a product or service so that they meet specified requirements
+
+- reactive approach
+- requires audit of the product or **output**
+
+## Quality Assurance Considerations
+
+The primary goal of QA is to scrub the errors from the input to the analytical pipeline.
+
+1) Consider the format of the raw data:
+
+- relational (i.e., tabular) vs. non-relational (e.g., document, graph) data
+- row count and meaning
+- column count and meaning
+- data types (e.g., categorical or numerical)
+- file type
+
+Useful base R functions:
+```{r}
+head(CO2) #first 6 rows
+tail(CO2,10) #last 10 rows
+nrow(CO2) #number of rows
+ncol(CO2) #number of columns
+```
+
+
+2) Consider the values of each variable:
+
+- minimum and maximum, especially outliers beyond physical limits (e.g., water temperature above 20$^\circ$C on the Oregon coast)
+- characters instead of numerics
+- appropriate units and scale
+- combinations of values
+
+Useful R functions:
+```{r}
+summary(CO2)
+min(CO2$conc)
+max(CO2$conc)
+class(CO2$Type)
+unique(CO2$Type)
+table(CO2$Type, CO2$Treatment)
+skimr::skim(CO2)
+```
+
+## Quality Control Considerations
+
+The primary goal of QC is to scrub the errors from the output from the analytical pipeline.
+
+1) Consider future data users:
+
+- Do the metadata explicitly explain basic information about the data that can make tracking and working with the data easier?
+- Will other scientists be able to interpret my summary figures and tables?
+- Will other scientists or future me be able to read and understand my code?
+
+2) Consider the stakeholders: 
+
+- Will non-scientist subject matter experts be able to interpret my summary figures and tables?
+- Do my products contain proprietary information that must be redacted?
+
+
+## NOAA Data Example
+We'll work with a simple dataset from the National Oceanic and Atmospheric Administration (NOAA). These data are the bimonthly values for the Multivariate El Niño Southern Oscillation Index (https://psl.noaa.gov/enso/mei/) or MEI for short. Our end goal is to create a time series showing the El Niño and La Niña events over the past 47 years.
+
+First, let's load the input data. There are four versions of the data:
+
+- raw data updated on March 10, 2025
+- cleaned data updated on March 10, 2025
+- raw data updated on January 8, 2026
+- cleaned data updated on January 8, 2026
+
+```{r}
+MEI_raw_1 <- read.delim("MEI_raw_20250310.txt")
+MEI1 <- read.table("MEI_cleaned_20250310.txt", header = TRUE)
+MEI_raw_2 <- read.delim("MEI_raw_20260108.txt")
+MEI2 <- read.table("MEI_cleaned_20260108.txt", header = TRUE)
+```
+
+Now take a look at the MEI_raw vs. MEI_cleaned files for the older version. In this case, it was easiest to work with the data in a text editor, but larger files might need to be manipulated in R.
+```{r}
+View(MEI_raw_1)
+View(MEI1)
+```
+
+To view the top few rows of the data frame, use the `head` function. Similarly, use the `tail` function to view the bottom few rows.
+```{r}
+head(MEI1)
+tail(MEI1)
+```
+
+As you can see, there's an issue with the last row having -999.000 as a placeholder instead of `NA`. There are several ways to convert these values, some of which are more work than others.
+
+We could manually replace the values in a vector using `replace` and fix it in 10 lines of code.
+```{r}
+MEI1$FM <- replace(MEI1$FM, MEI1$FM == -999, NA)
+MEI1$MA <- replace(MEI1$MA, MEI1$MA == -999, NA)
+MEI1$AM <- replace(MEI1$AM, MEI1$AM == -999, NA)
+MEI1$MJ <- replace(MEI1$MJ, MEI1$MJ == -999, NA)
+MEI1$JJ <- replace(MEI1$JJ, MEI1$JJ == -999, NA)
+MEI1$JA <- replace(MEI1$JA, MEI1$JA == -999, NA)
+MEI1$AS <- replace(MEI1$AS, MEI1$AS == -999, NA)
+MEI1$SO <- replace(MEI1$SO, MEI1$SO == -999, NA)
+MEI1$ON <- replace(MEI1$ON, MEI1$ON == -999, NA)
+MEI1$ND <- replace(MEI1$ND, MEI1$ND == -999, NA)
+tail(MEI1)
+```
+
+We could use a for-loop and fix it in 4 lines of code.
+```{r}
+MEI1 <- read.table("MEI_cleaned_20250310.txt", header = TRUE)
+
+for (i in 1:ncol(MEI1)) {
+  col <- colnames(MEI1)[i]
+  MEI1[[col]] <- replace(MEI1[[col]], MEI1[[col]] == -999, NA)
+}
+
+tail(MEI1)
+```
+
+We could use the `lapply` function and fix it in 1 line of code.
+```{r}
+MEI1 <- read.table("MEI_cleaned_20250310.txt", header = TRUE)
+
+MEI1[] <- lapply(MEI1, function(x) replace(x, x == -999, NA))
+
+tail(MEI1)
+```
+
+How do the two versions of the cleaned data compare to each other? Are there any major changes? To answer these questions, we can do a quick subtraction of one dataset from another, ignoring the first column of each.
+```{r}
+MEIdiff <- MEI2[,-1] - MEI1[,-1]
+max(MEIdiff, na.rm = T)
+min(MEIdiff, na.rm = T)
+```
+
+Since there aren't any major discrepancies, let's use the most recent version of the dataset moving forward.
+```{r}
+MEI <- MEI2
+```
+
+To check how R stores the data in the table and columns, use the `class` function.
+```{r}
+class(MEI)
+class(MEI$YEAR)
+class(MEI$DJ)
+```
+
+Now let's get a sense of the spread of the data using the function `summary`.
+```{r}
+summary(MEI)
+```
+
+Another nice way of summarizing data is to use the `boxplot` function.
+```{r}
+boxplot(MEI)
+```
+
+As you can see, the year column is distorting the y-axis, so let's remove it by indexing into the columns and removing the first column.
+```{r}
+boxplot(MEI[,-1])
+```
+
+Add x-axis and y-axis labels to make it more readable.
+```{r}
+boxplot(MEI[,-1], ylab = "Multivariate ENSO Index", xlab = "Month")
+```
+
+Of course, these data actually represent a time series, which is best plotted using a line graph. We need to wrangle our dataset to plot a time series, which we'll do using functions from the R packages `tidyr`, `dplyr`, and `ggplot2`.
+```{r, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+```
+
+The dataset is currently in "wide" format, meaning there are redundant variable types across the columns. We need to convert it to "long" format, so that the same variables are stacked in a single column. We'll use the function `pivot_longer` to achieve this. The important arguments are:
+
+- `cols` for the columns to pivot into longer format
+- `names_to` to specify the new column to create from the information stored in `cols`
+- `values_to` to specify the new column to create from the data stored in the cell values.
+```{r}
+MEI_long <- MEI %>%
+  pivot_longer(cols = DJ:ND, names_to = "Month", values_to = "MEI")
+
+head(MEI_long)
+```
+
+Now we want to create a new column that combines the information stored in `YEAR` and `Month`. However, `Month` currently stores a 2-letter code that R doesn't understand, so first we need to create another column with numerical data. We'll make these new columns with the function `mutate`.
+```{r}
+MEI_long <- MEI_long %>%
+  mutate(MonthNum = case_match(Month,
+                               "DJ" ~ "01",
+                               "JF" ~ "02",
+                               "FM" ~ "03",
+                               "MA" ~ "04",
+                               "AM" ~ "05",
+                               "MJ" ~ "06",
+                               "JJ" ~ "07",
+                               "JA" ~ "08",
+                               "AS" ~ "09",
+                               "SO" ~ "10",
+                               "ON" ~ "11",
+                               "ND" ~ "12"),
+         Date = paste0(MonthNum, "/" , 1, "/", YEAR))
+
+MEI_long$Date <- as.Date(MEI_long$Date, "%m/%d/%Y")
+
+head(MEI_long)
+```
+
+Let's make a quick line graph showing the Multivariate ENSO Index over time!
+```{r}
+MEIseries <- ggplot(data = MEI_long, aes(x = Date, y = MEI)) +
+  geom_line()
+
+MEIseries
+```
+
+We have two new products: a dataframe called `MEI_long` and a time series plot called `MEIseries`. Now let's follow the principles of quality control to improve these data products!
+
+First, let's make our dataset more meaningful by categorizing the bimonthly MEI as El Niño (MEI $\ge 0.5$), neutral ($-0.5 <$ MEI $< 0.5$), or La Niña (MEI $\le -0.5$). We'll make a new column to store the ENSO phase using `mutate` and nested `if_else` statements. Let's make sure our logic was applied correctly using the `table` function.
+```{r}
+MEI_long <- MEI_long %>% 
+  mutate(ENSOphase = if_else(MEI < -0.49, "La Nina",
+                             if_else(MEI > 0.49, "El Nino",
+                                     "Neutral")))
+
+table(MEI_long$ENSOphase, MEI_long$MEI)
+```
+
+While our categories are correct, notice how the ENSO phases appear in alphabetical order, even though the ENSO phase variable actually shows ordinal data. Let's save this as a factor and set the levels of the factor in the correct order.
+```{r}
+MEI_long$ENSOphase <- factor(MEI_long$ENSOphase,
+                             levels = c("La Nina","Neutral","El Nino"))
+
+head(MEI_long)
+```
+
+Great! Now let's work on improving our plot `MEIseries` using some default themes.
+```{r}
+MEIseries
+MEIseries + theme_classic()
+MEIseries + theme_bw()
+MEIseries + theme_minimal()
+```
+
+Because journals do not typically want the horizontal or vertical grid lines on plots, `theme_classic` is the best choice here. But there are important thresholds in these data, so we'll add three horizontal lines using `geom_hline`.
+```{r}
+MEIseries + theme_classic() +
+  geom_hline(yintercept = 0, linetype = "solid") +
+  geom_hline(yintercept = 0.5, linetype = "dashed") +
+  geom_hline(yintercept = -0.5, linetype = "dashed")
+```
+
+Now we can see when the time series was in the three ENSO phases, but let's add some colored columns to make it more obvious! We'll also remove the missing data from `MEI_long` using `filter`.
+```{r}
+ggplot(data = filter(MEI_long, !is.na(MEI)), aes(x = Date, y = MEI)) +
+  geom_line() + theme_classic() +
+  geom_hline(yintercept = 0, linetype = "solid") +
+  geom_hline(yintercept = 0.5, linetype = "dashed") +
+  geom_hline(yintercept = -0.5, linetype = "dashed") + 
+  geom_col(aes(x = Date, y = MEI, fill = ENSOphase))
+```
+
+The default colors don't match our intuition of El Niño being warm and La Niña being cool, so let's change these using `scale_fill_manual`. We'll also use the character code for ñ (`\u00F1`). In addition, let's make the black line bigger and draw it on top of the columns.
+```{r}
+ggplot(data = filter(MEI_long, !is.na(MEI)), aes(x = Date, y = MEI)) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "solid") +
+  geom_hline(yintercept = 0.5, linetype = "dashed") +
+  geom_hline(yintercept = -0.5, linetype = "dashed") + 
+  geom_col(aes(x = Date, y = MEI, fill = ENSOphase)) +
+  geom_line(linewidth = 0.7) +
+  scale_fill_manual(name = "ENSO Phase",
+                    values = c("dodgerblue","gray36","firebrick"),
+                    labels = c("La Ni\u00F1a","Neutral","El Ni\u00F1o"))
+```
+
+We're almost done, but let's improve the x-axis and y-axis with better titles and breaks. We also want to put the legend above the figure and make all the font black.
+```{r}
+ggplot(data = filter(MEI_long, !is.na(MEI)), aes(x = Date, y = MEI)) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "solid") +
+  geom_hline(yintercept = 0.5, linetype = "dashed") +
+  geom_hline(yintercept = -0.5, linetype = "dashed") + 
+  geom_col(aes(x = Date, y = MEI, fill = ENSOphase)) +
+  geom_line(linewidth = 0.7) +
+  scale_x_date(breaks = seq(as.Date("1980-01-01"), as.Date("2025-01-01"),
+                            by = "5 years"),
+               date_labels = "%Y") +
+  scale_y_continuous(name = "Multivariate ENSO Index") +
+  scale_fill_manual(name = "ENSO Phase",
+                    values = c("dodgerblue","gray36","firebrick"),
+                    labels = c("La Ni\u00F1a","Neutral","El Ni\u00F1o")) +
+  theme(legend.position = "top", 
+        axis.text = element_text(color = "black"))
+```
+
+To save this figure, use the `ggsave` function and specify the size and units.
+```{r}
+MEIseriesfinal <-
+  ggplot(data = filter(MEI_long, !is.na(MEI)), aes(x = Date, y = MEI)) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "solid") +
+  geom_hline(yintercept = 0.5, linetype = "dashed") +
+  geom_hline(yintercept = -0.5, linetype = "dashed") + 
+  geom_col(aes(x = Date, y = MEI, fill = ENSOphase)) +
+  geom_line(linewidth = 0.7) +
+  scale_x_date(breaks = seq(as.Date("1980-01-01"), as.Date("2025-01-01"),
+                            by = "5 years"),
+               date_labels = "%Y") +
+  scale_y_continuous(name = "Multivariate ENSO Index") +
+  scale_fill_manual(name = "ENSO Phase",
+                    values = c("dodgerblue","gray36","firebrick"),
+                    labels = c("La Ni\u00F1a","Neutral","El Ni\u00F1o")) +
+  theme(legend.position = "top", 
+        axis.text = element_text(color = "black"))
+
+ggsave(MEIseriesfinal, filename = "MEI Time Series.png",
+       dpi = 2000, height = 4, width = 6, units = "in")
+```
+
